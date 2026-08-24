@@ -1,10 +1,11 @@
 # Developer Handoff
 
-This is the current development snapshot of the Whisker Radar Validation
-Fixture. Core fixture control, run records, reports, target-aware radar
-settings, automated tests, and local campaign planning are present.
+The Whisker Radar Validation Fixture controls the fixture, records test runs,
+creates local reports, manages radar settings, and supports local campaign
+planning. Start with the documentation index, then use this guide when making
+or reviewing changes.
 
-## Setup and verification
+## Get started
 
 ```bat
 install.cmd
@@ -19,34 +20,44 @@ On a Pi with Python 3 and pigpio installed:
 python3 -m unittest discover -s pi-radar-service -p 'test_*.py'
 ```
 
-## Read in this order
+## Find your way around
 
-1. `Documentation/README.md`
-2. `Documentation/Code Guide.md`
-3. `validation-core.js`
-4. `renderer.js`
-5. `preload.js`
-6. `main.js`
-7. `radar-settings-core.js` and the campaign modules
-8. `test/` and `pi-radar-service/test_radar_service.py`
+| If you need to... | Start here |
+|---|---|
+| Understand the project and its documents | `Documentation/README.md` and `Documentation/Code Guide.md` |
+| Change test rules or geometry | `validation-core.js` |
+| Change the application UI or run flow | `renderer.js`, then `preload.js` and `main.js` |
+| Change radar settings or campaigns | `radar-settings-core.js` and the campaign modules |
+| Verify a change | `test/` and `pi-radar-service/test_radar_service.py` |
 
-## Boundaries to preserve
+## Key engineering rules
+
+### Application structure
 
 - Keep pure core modules independent of Electron and the DOM.
 - Keep filesystem, network, and hardware privileges behind `main.js` and
   `preload.js`.
-- Preserve raw observations and null latency for misses.
-- Require a fresh LOW baseline before a trigger.
-- Treat the finalized local run folder as authoritative.
-- Keep local campaign history tied to finalized run artifacts.
-- Range-check radar writes and require target-specific read-back verification.
 - Keep run naming in `run-naming-core.js`.
 - Keep campaign normalization and progress semantics in `campaign-manager.js`.
-- Keep authoritative run transitions, cancellation, and crash recovery in
-  `run-controller.js`; renderer flags are presentation mirrors, not authority.
-- Keep emergency stop outside the ordinary command queue.
+- Keep run transitions, cancellation, and crash recovery in `run-controller.js`;
+  renderer flags are presentation only.
+
+### Test data and run records
+
+- Preserve raw observations and null latency for misses.
+- Treat the finalized local run folder as the record of the test result.
+- Keep local campaign history tied to finalized run artifacts.
 - Never finalize or campaign-record a run until its finalization transaction
   reaches the finalized artifact state.
+
+### Hardware safety
+
+- Require a fresh LOW baseline before a trigger.
+- Range-check radar writes and require target-specific read-back verification.
+- Keep emergency stop outside the ordinary command queue.
+
+### UI and configuration state
+
 - Add renderer state through explicit `renderer-store.js` actions rather than
   introducing another independent global flag.
 - Engineering forms must mutate `configuration-draft.js` state and promote it
@@ -57,15 +68,7 @@ python3 -m unittest discover -s pi-radar-service -p 'test_*.py'
 - Do not rerender editable operator inputs on their `input` events. Update the
   review summary from their current values so focus and partial text survive.
 
-## Repository hygiene
-
-Source-controlled: application files, `test/`, `tools/`, `pi-radar-service/`,
-`vendor/`, and `package-lock.json`. Generated or local-only: `node_modules/`,
-`dist/`, logs, caches, temporary folders, and gathered run data.
-
-Review `git status` before editing. Untracked files may be active project work.
-
-## Release and handoff checks
+## Before handoff or release
 
 1. Classify modified and untracked paths.
 2. Run `npm test` and the Pi tests when relevant.
@@ -75,15 +78,17 @@ Review `git status` before editing. Untracked files may be active project work.
 5. Build and smoke-test the installer.
 6. Check Markdown links and record unperformed physical acceptance.
 
-Do not put gathered run data or DOCX copies into a source handoff. Recreate
-dependencies with `install.cmd`; recreate installers with `build.cmd`.
+Source-controlled files include the application, `test/`, `tools/`,
+`pi-radar-service/`, `vendor/`, and `package-lock.json`. Do not add generated
+or local-only files such as `node_modules/`, `dist/`, logs, caches, temporary
+folders, gathered run data, or DOCX copies. Recreate dependencies with
+`install.cmd` and installers with `build.cmd`.
 
-## Decisions that remain explicit
+## Fixture facts to verify
 
-- The measured physical radar center is authoritative.
-- Safe limits, speeds, acceleration, and reflector behavior come from
-  commissioning.
+- Confirm the measured physical radar center during commissioning.
+- Use commissioned limits, speeds, acceleration, and reflector behavior.
 - The expected reflector macro is `REFLECTOR_SPIN`.
-- Z has no conventional home switch; its reference method is fixture-specific.
-- Mock radar mode is never valid for qualification.
-- Network failures never change the local result.
+- Z has no conventional home switch; use the fixture-specific reference method.
+- Do not use mock radar mode for qualification.
+- Network failures must not alter the local test result.
