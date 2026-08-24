@@ -257,10 +257,13 @@
       && (!Number.isFinite(bounds.maxY) || point.y <= bounds.maxY)
       && (!options.isPointAllowed || options.isPointAllowed(point));
     const layers = [0.38, 0.64, 0.9];
+    const candidatesBySide = Object.fromEntries(sides.map((side) => [side, []]));
+    const seenBySide = Object.fromEntries(sides.map((side) => [side, new Set()]));
     sides.forEach((side) => {
       const sideCount = counts[side];
-      for (let index = 0; index < sideCount; index += 1) {
-        const fraction = sideCount <= 1 ? 0.5 : (index + 1) / (sideCount + 1);
+      const samples = Math.max(48, sideCount * 24);
+      for (let index = 0; index < samples; index += 1) {
+        const fraction = (index + 1) / (samples + 1);
         const layer = layers[index % layers.length];
         const distance = inside
           ? Math.max(keepOut + 0.5, outer * layer)
@@ -276,9 +279,38 @@
           ? distanceFromDut > keepOut && distanceFromDut <= trigger + 1e-6
           : distanceFromDut > noTrigger + 1e-6 && distanceFromDut <= outer + 1e-6;
         if (!validBand || !allowed(rounded)) continue;
-        points.push({ ...rounded, z: finite(options.z, 0), holdMs: Math.max(0, finite(options.holdMs, 1000)), expectedDetected: inside, zone: inside ? 'required-trigger' : 'required-no-trigger', coveragePartition: side[0].toUpperCase() + side.slice(1), coverageSide: side });
+        const key = `${rounded.x},${rounded.y}`;
+        if (seenBySide[side].has(key)) continue;
+        seenBySide[side].add(key);
+        candidatesBySide[side].push({ ...rounded, z: finite(options.z, 0), holdMs: Math.max(0, finite(options.holdMs, 1000)), expectedDetected: inside, zone: inside ? 'required-trigger' : 'required-no-trigger', coveragePartition: side[0].toUpperCase() + side.slice(1), coverageSide: side });
       }
     });
+
+    const usedBySide = Object.fromEntries(sides.map((side) => [side, new Set()]));
+    sides.forEach((side) => {
+      const quota = Math.min(counts[side], candidatesBySide[side].length);
+      for (let index = 0; index < quota; index += 1) {
+        const sourceIndex = Math.min(candidatesBySide[side].length - 1,
+          Math.floor((index + 0.5) * candidatesBySide[side].length / quota));
+        points.push(candidatesBySide[side][sourceIndex]);
+        usedBySide[side].add(sourceIndex);
+      }
+    });
+
+    // Preserve each side's requested quota first. Only redistribute a shortfall
+    // when that side has no more physically valid candidates.
+    while (points.length < count) {
+      let added = false;
+      for (const side of sides) {
+        const sourceIndex = candidatesBySide[side].findIndex((_, index) => !usedBySide[side].has(index));
+        if (sourceIndex < 0) continue;
+        points.push(candidatesBySide[side][sourceIndex]);
+        usedBySide[side].add(sourceIndex);
+        added = true;
+        if (points.length === count) break;
+      }
+      if (!added) break;
+    }
     return points;
   }
 

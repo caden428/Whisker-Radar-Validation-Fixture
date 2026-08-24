@@ -84,6 +84,14 @@ geometry. DUT identity, actual run location, radar conditions, and output naming
 remain part of Run a Test or Campaign setup. The footer says **Save Test Plan**
 while this tab is active.
 
+Automatically generated plans must contain the complete requested point count.
+The generator chooses only positions inside fixture travel and outside the DUT
+keep-out. If one Full DUT side cannot satisfy its share, the generator uses
+another accessible side; if the complete count still cannot fit, it blocks the
+plan and reports the shortfall. Manual and imported coordinates are never moved
+or deleted automatically. An unsafe supplied coordinate blocks the run until it
+is corrected.
+
 The **Linked motion sequence** control is the plan's low-level path, not a
 separate test-plan library. Older unlinked sequences are migrated into safe,
 unscored **Motion Sequence Only** plans so they remain selectable. Engineering

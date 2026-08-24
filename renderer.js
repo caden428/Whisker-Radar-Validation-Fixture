@@ -1518,6 +1518,11 @@ function currentPlanBlockingIssue() {
       return 'The automatic formal plan must be regenerated before running';
     }
   }
+  const automaticCharacterization = ['Characterization DUT Perimeter Grid', 'Characterization Auto Grid'].includes(config.activeSequence);
+  if (['characterization', 'interference'].includes(testId) && automaticCharacterization
+      && points.length !== Math.max(1, Math.floor(Number(config.validation?.pointCount) || 100))) {
+    return 'The automatic characterization plan must be regenerated with the requested safe point count before running';
+  }
   if (!config.logging?.enabled) return 'Enable raw CSV logging in Settings before running a test';
   if (scoredMode) {
     const issues = planValidationIssues(points);
@@ -4800,6 +4805,9 @@ function buildCharacterizationPlan() {
       bounds, holdMs: config.trigger.holdMsDefault, keepOutClearanceMm: reflectorClearanceMm(),
       isPointAllowed: (point) => !DutLocationCore.pointInNoGo(point, activeDutLocation(), { clearanceMm: reflectorClearanceMm() }),
     }).map((point, index) => ({ ...point, z: 0, pointId: `characterization-${String(index + 1).padStart(3, '0')}` }));
+    if (generated.length !== count) {
+      return { error: `Only ${generated.length} of ${count} requested safe perimeter points fit inside configured fixture travel.` };
+    }
     return {
       name: 'Characterization DUT Perimeter Grid', points: generated, count,
       summary: `Characterization DUT Perimeter Grid: ${generated.length}/${count} safe positions on ${coverageMode.replace(/-/g, ' ')}.${angularZone.enabled ? ` Angular filter is ignored for explicit perimeter coverage (${angularZone.label}).` : ''}`,
@@ -4922,6 +4930,11 @@ function buildCharacterizationPlan() {
 /** Implements the regenerate characterization plan from operator operation for this module. */
 async function regenerateCharacterizationPlanFromOperator() {
   const plan = buildCharacterizationPlan();
+  if (plan.error) {
+    updateQuickRunPanel(plan.error, true);
+    renderPlanPreviewCanvas([], plan.error, 'quick-formal-preview');
+    return false;
+  }
   plan.points = optimizedExecutionPoints(plan.points);
   config.sequences[plan.name] = plan.points;
   config.activeSequence = plan.name;
@@ -5910,7 +5923,7 @@ async function wireQuickRunPanel() {
     event.target.value = count;
     if (['characterization', 'interference'].includes(activeTestId())) {
       const plan = await regenerateCharacterizationPlanFromOperator();
-      logEvent(`${plan.name} regenerated with ${count} points`, 'info');
+      if (plan) logEvent(`${plan.name} regenerated with ${count} points`, 'info');
     } else if (activeTestId() === 'system') {
       const generated = await regenerateSystemValidationPlan();
       if (generated) logEvent(`System Level plan regenerated with ${count} points`, 'info');

@@ -286,7 +286,38 @@ assert.strictEqual(perimeter.length, 20, 'perimeter generator must preserve exac
 assert.ok(perimeter.every((point) => core.classifySystemDistance(point, dualSystemGeometry) === 'required-trigger'));
 assert.ok(perimeter.every((point) => point.x < 744 || point.x > 1006 || point.y < 880 || point.y > 1200), 'perimeter points must stay outside the physical DUT');
 assert.deepStrictEqual(new Set(perimeter.map((point) => point.coverageSide)), new Set(['front', 'left', 'right']));
+assert.deepStrictEqual(perimeter.reduce((counts, point) => ({ ...counts, [point.coverageSide]: (counts[point.coverageSide] || 0) + 1 }), {}),
+  { front: 7, left: 7, right: 6 }, 'full DUT coverage must preserve deterministic balanced side quotas');
+assert.deepStrictEqual(core.generateRadialPoints({
+  count: 20, zone: 'inside', geometry: dualSystemGeometry, coverageMode: 'full-dut',
+  bounds: { minX: 0, maxX: 1725, minY: 0, maxY: 1040 }, keepOutClearanceMm: 12,
+  isPointAllowed: (point) => !DutLocationCore.pointInNoGo(point, DutLocationCore.DEFAULT_LOCATION, { clearanceMm: 12 }),
+}), perimeter, 'perimeter generation must be repeatable for the same inputs');
 assert.ok(perimeter.every((point) => point.coverageSide !== 'rear'), 'full DUT coverage must never generate rear points');
+const backfilledPerimeter = core.generateRadialPoints({
+  count: 10, zone: 'inside', geometry: dualSystemGeometry,
+  coverageMode: 'full-dut',
+  bounds: { minX: 0, maxX: 1725, minY: 0, maxY: 1040 },
+  keepOutClearanceMm: 12,
+  isPointAllowed: (point) => !DutLocationCore.pointInNoGo(point, DutLocationCore.DEFAULT_LOCATION, { clearanceMm: 12 })
+    && !(point.x < 744 && point.y < 950),
+});
+assert.strictEqual(backfilledPerimeter.length, 10, 'unsafe perimeter candidates must be replaced instead of reducing the requested count');
+assert.ok(backfilledPerimeter.every((point) => !(point.x < 744 && point.y < 950)), 'replacement points must come only from the allowed area');
+assert.deepStrictEqual(new Set(backfilledPerimeter.map((point) => point.coverageSide)), new Set(['front', 'left', 'right']), 'backfill must preserve every feasible requested side');
+const redistributedPerimeter = core.generateRadialPoints({
+  count: 10, zone: 'inside', geometry: dualSystemGeometry, coverageMode: 'full-dut',
+  bounds: { minX: 0, maxX: 1725, minY: 0, maxY: 1040 }, keepOutClearanceMm: 12,
+  isPointAllowed: (point) => !DutLocationCore.pointInNoGo(point, DutLocationCore.DEFAULT_LOCATION, { clearanceMm: 12 }) && point.y < 880,
+});
+assert.strictEqual(redistributedPerimeter.length, 10, 'an unavailable side quota must be redistributed to feasible sides');
+assert.ok(redistributedPerimeter.every((point) => point.coverageSide === 'front'), 'redistribution must use only physically feasible sides');
+const impossiblePerimeter = core.generateRadialPoints({
+  count: 10, zone: 'inside', geometry: dualSystemGeometry, coverageMode: 'full-dut',
+  bounds: { minX: 0, maxX: 1725, minY: 0, maxY: 1040 }, keepOutClearanceMm: 12,
+  isPointAllowed: () => false,
+});
+assert.strictEqual(impossiblePerimeter.length, 0, 'an impossible exact-count request must return a shortfall for the caller to block');
 const frontOnly = core.generateRadialPoints({
   count: 20, zone: 'inside', geometry: dualSystemGeometry, coverageMode: 'front',
   bounds: { minX: 0, maxX: 1725, minY: 0, maxY: 1040 },

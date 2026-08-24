@@ -131,6 +131,10 @@ assert.ok(renderer.includes('drawReflectorKeepout(ctx,')
 assert.ok(renderer.indexOf('const runBlocker = currentPlanBlockingIssue();', renderer.indexOf('async function runSequence()'))
   < renderer.indexOf('testRunning = true;', renderer.indexOf('async function runSequence()')),
   'run must validate DUT endpoints and routes before enabling motion');
+assert.ok(renderer.includes("automaticCharacterization = ['Characterization DUT Perimeter Grid', 'Characterization Auto Grid'].includes(config.activeSequence)")
+  && renderer.includes('automatic characterization plan must be regenerated with the requested safe point count')
+  && renderer.includes('requested safe perimeter points fit inside configured fixture travel'),
+  'automatic characterization must preserve the requested safe point count or block the run');
 assert.ok(main.includes("DutLocationCore.pointBehindDut(end, activeDutLocation())"),
   'the main process must reject rear moves even if the renderer guard is bypassed');
 assert.ok(main.includes("MotionSafetyCore.pointIssue(config.motion, requested)")
