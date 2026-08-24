@@ -1,6 +1,6 @@
 # Release gates
 
-Phase 4 separates software qualification from authorization to operate a physical fixture.
+Release gates separate software qualification from authorization to operate a physical fixture.
 
 ## Simulated gate
 

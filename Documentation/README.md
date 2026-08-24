@@ -13,19 +13,10 @@ document and the code disagree.
 | [User Manual](Radar%20Validation%20Fixture%20User%20Manual.md) | Operator workflow, safety, results, and shutdown |
 | [Installation and Commissioning](Installation%20and%20Commissioning.md) | Fixture installation and acceptance |
 | [Radar Settings Integration](Radar%20Settings%20Integration.md) | Radar targets, wiring, Pi service, and read-back acceptance |
-| [Campaign Automation](Campaign%20Automation.md) | Local campaign plans and run history |
 | [Troubleshooting](Troubleshooting.md) | Fault isolation and recovery |
 
-## Authority rules
+## Status
 
-1. Approved test method and released engineering requirements
-2. Measured and accepted physical fixture values
-3. Current source and configuration
-4. These procedures
-
-All radar profiles in this source tree are experimental. A profile is not
-qualified merely because the UI or mock service can select it.
-
-Historical pilot data, old configuration snapshots, and DOCX copies were
-removed from the source package. If historical evidence is needed, keep it in
-a separately controlled archive rather than mixing it with current context.
+All radar profiles and hardware-specific values are experimental until the
+installed fixture passes commissioning. When documentation and code differ,
+confirm with the project owner before changing hardware behavior.

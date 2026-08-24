@@ -78,6 +78,6 @@ The operator workflow uses one reusable plan concept:
 2. **Create or Edit Test Plans** — use the plan-management action beside the selector or the Test Plans settings tab. Built-ins are protected, custom plans are versioned, and the existing point generator, preview, CSV import, and manual editor remain available.
 3. **Campaign** — choose the same Test Plan, then add campaign-only conditions and repetition. A campaign orchestrates a plan; it does not define a second kind of procedure.
 
-The existing modes map to Test Plan types: Formal Positive, Formal Negative, Characterization, Pair Interference, Custom Validation, and Unscored Sequence. The legacy recipe schema remains only as a deterministic migration adapter for existing saved data and historical references.
+The existing modes map to Test Plan types: Formal Positive, Formal Negative, Characterization, Pair Interference, Custom Validation, and Unscored Sequence.
 
 Any future test type should provide five things: a test-plan schema, a plan generator or importer, an expectation/classification rule, a preflight validator, and a report section. That keeps adding a test type bounded and prevents new controls from bypassing safe routing, persistence, or lifecycle input checks.

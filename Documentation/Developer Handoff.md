@@ -3,8 +3,6 @@
 This is the current development snapshot of the Whisker Radar Validation
 Fixture. Core fixture control, run records, reports, target-aware radar
 settings, automated tests, and local campaign planning are present.
-All radar profiles and hardware-specific values remain experimental until
-commissioned on the installed fixture.
 
 ## Setup and verification
 

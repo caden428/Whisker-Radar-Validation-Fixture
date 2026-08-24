@@ -21,18 +21,14 @@
 - `operator-flow-core.js` owns the Run a Test hardware catalog, test-type
   compatibility rules, angular-zone labels, filtered recipe queries, and
   plan-draft change detection without depending on the DOM or Electron.
-- `operator-flow-state.js` owns the Phase 2 selection state machine. Layout,
+- `operator-flow-state.js` owns the selection state machine. Layout,
   hardware, location, type, and plan changes are explicit transitions that
   clear only invalid downstream selections.
-- `test-plan-core.js` defines the canonical contracts for a reusable test plan,
-  an operator run setup, and an immutable prepared run. It also owns validation
-  and deterministic conversion from the legacy recipe schema.
-- `run-workspace-core.js` provides the Phase 3 plan catalog, immutable operator
+- `test-plan-core.js` defines the contracts for a reusable test plan, an
+  operator run setup, and an immutable prepared run. It also owns validation.
+- `run-workspace-core.js` provides the plan catalog, immutable operator
   draft boundary, and prepared-run factory. Catalog reads return copies so UI
   code cannot mutate saved definitions by reference.
-- `recipe-core.js` is now a compatibility adapter for stored pre-migration
-  recipes, campaigns, and linked sequences. New operator reads and writes use
-  the canonical test-plan contract and repository.
 - `run-state-view.js` owns the lifecycle-step DOM rendering previously embedded
   in the renderer coordinator.
 - `validation-core.js` is DOM/Electron independent. It defines test geometry,
@@ -71,12 +67,11 @@ read-back. It is installed separately from the Windows app.
 
 ## Shared test-plan contract
 
-- `TestPlanCore.OWNERSHIP` is the source of truth for data boundaries. A saved
+- `TestPlanCore.OWNERSHIP` defines data boundaries. A saved
   plan owns test type, compatibility, rules, generation, and execution policy.
   A run setup owns hardware, location, DUT identity, selected plan, and explicit
   run-only overrides. Fixture configuration owns commissioned hardware facts.
-- Operator selectors read `config.testPlans`; startup deterministically migrates
-  an older `config.recipes` catalog when canonical storage is absent.
+- Operator selectors read `config.testPlans`.
 - Plan changes use narrow `test-plan:save` and `test-plan:delete` IPC contracts.
   `test-plan-repository-core.js` owns versioning and history, and the main
   process persists changes with asynchronous file I/O.
@@ -89,7 +84,6 @@ read-back. It is installed separately from the Windows app.
   selected DUT/sensor location, preventing an edit from silently preparing
   motion for stale fixture context.
 - Runtime manifests and reports record `testPlan` and `runSetup` independently.
-  They no longer synthesize a supposed saved recipe from mutable configuration.
 
 ### Operator selection state
 
@@ -101,10 +95,8 @@ and select options are replaced only when their option signature changes.
 
 ### Catalog, draft, and prepared execution
 
-The operator plan selector reads canonical plans from the runtime catalog.
-Legacy recipe persistence remains only as an internal compatibility adapter for
-campaign and saved-file migration. Operator choices
-are held as a `RunSetup` draft and do not mutate catalog plans. After generation
+The operator plan selector reads plans from the runtime catalog. Operator
+choices are held as a `RunSetup` draft and do not mutate catalog plans. After generation
 and safety validation, `RunWorkspaceCore.prepare` deep-freezes the exact plan,
 setup, points, resolved hardware, resolved geometry, and acceptance policy.
 
@@ -113,18 +105,8 @@ prepared snapshot. A later UI/configuration refresh therefore cannot silently
 change the identity, rules, geometry, or point list attributed to an active run.
 
 The guided **Run Test** action performs plan save, generation, safety validation,
-preflight, and execution in order. The former advanced recipe workflow and
-duplicate Recipe Builder are not operator-visible. The motion-area control is
-hidden while idle and appears only as the active-run abort/E-stop control.
-
-### Legacy recipe migration
-
-Phase 1 preserves existing files. Migration maps `family` to `testType`, scalar
-point/cycle/threshold fields to `rules`, distribution and sequence references to
-`generation`, and `derivedFromRecipeId` to `derivedFromPlanId`. IDs, versions,
-timestamps, compatibility, execution policy, custom history, and active-plan
-identity are retained. The migration is deterministic and does not write a new
-catalog until a later repository migration is explicitly introduced.
+preflight, and execution in order. The motion-area control is hidden while idle
+and appears only as the active-run abort/E-stop control.
 
 ## Motion and commissioning contract
 

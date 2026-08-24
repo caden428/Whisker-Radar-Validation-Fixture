@@ -4,9 +4,6 @@ Electron application for operating the Whisker Radar Validation Fixture,
 recording raw observations, generating local engineering reports, and keeping
 run results in local HTML and CSV artifacts.
 
-This package is a development source tree. Hardware values and radar protocol
-profiles remain experimental until the installed fixture passes commissioning.
-
 ## Quick start
 
 ```bat
