@@ -1,0 +1,49 @@
+# Requires the Raspberry Pi host MCU to be installed and named "rpi".
+# OUT is active-high. The pull-down keeps an unplugged input safely LOW.
+# The RCWL-0516 dual option reuses these A/B OUT inputs; it does not use UART.
+[gcode_button radar_sensor_a]
+pin: ~rpi:gpio18
+press_gcode:
+    G4 P0
+release_gcode:
+    G4 P0
+
+[gcode_button radar_sensor_b]
+pin: ~rpi:gpio23
+press_gcode:
+    G4 P0
+release_gcode:
+    G4 P0
+
+# Standalone single-sensor OUT; BCM GPIO26 / physical pin 37. The RCWL-0516
+# single option reuses this input and does not use the MS58 UART pins.
+[gcode_button radar_sensor_single]
+pin: ~rpi:gpio26
+press_gcode:
+    G4 P0
+release_gcode:
+    G4 P0
+
+# Legacy, standalone HLK-LD021 OUT; BCM GPIO13 / physical pin 33.
+[gcode_button radar_sensor_ld021]
+pin: ~rpi:gpio13
+press_gcode:
+    G4 P0
+release_gcode:
+    G4 P0
+
+# Interference-characterization pair. Confirm these pins with the commissioning
+# audit before copying them to printer.cfg. Pull-down makes an unplugged OUT LOW.
+[gcode_button radar_sensor_ld021_a]
+pin: ~rpi:gpio13
+press_gcode:
+    G4 P0
+release_gcode:
+    G4 P0
+
+[gcode_button radar_sensor_ld021_b]
+pin: ~rpi:gpio19
+press_gcode:
+    G4 P0
+release_gcode:
+    G4 P0

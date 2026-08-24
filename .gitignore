@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+_build_node/
+*.log
+electron_out.txt
+out.txt
+err.txt
+tmp-*/
+**/__pycache__/
+*.pyc

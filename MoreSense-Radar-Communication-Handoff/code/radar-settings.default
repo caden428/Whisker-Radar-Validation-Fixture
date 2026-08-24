@@ -1,0 +1,30 @@
+# Optional shared secret. If set, enter the same value as apiToken in the
+# Electron radarService configuration. Keep this file readable only by root/pi.
+RADAR_SERVICE_TOKEN=
+RADAR_SERVICE_PORT=7130
+RADAR_A_DEVICE=/dev/serial0
+RADAR_B_TX_GPIO=24
+RADAR_B_RX_GPIO=25
+RADAR_SINGLE_TX_GPIO=22
+RADAR_SINGLE_RX_GPIO=27
+RADAR_SINGLE_OUT_GPIO=26
+RADAR_LD021_TX_GPIO=5
+RADAR_LD021_RX_GPIO=6
+# LD021 OUT is read by Klipper, not this service; configure GPIO13 in
+# printer-radar-inputs.cfg.example / printer.cfg.
+# Pair interference target. A reuses the commissioned provisional LD021 UART;
+# B intentionally has no default. Set B only after the pin audit documents that
+# it does not conflict with Klipper, MoreSense, MS58, UART/Bluetooth, I2C/SPI,
+# printer.cfg includes, or Pi-reserved pins.
+RADAR_LD021_A_TX_GPIO=5
+RADAR_LD021_A_RX_GPIO=6
+RADAR_LD021_B_TX_GPIO=
+RADAR_LD021_B_RX_GPIO=
+# Optional GPIO-controlled external 5 V load switches. Leave blank for the
+# manual operator workflow. A Pi 5 V header pin is never a software switch.
+RADAR_LD021_A_POWER_GPIO=
+RADAR_LD021_B_POWER_GPIO=
+RADAR_LD021_POWER_ACTIVE_HIGH=1
+# Leave at 0 for standard MoreSense HCI. Set to 5 only if the non-destructive
+# query acceptance test proves this firmware needs the coworker-tool preamble.
+RADAR_PREAMBLE_ZEROS=0

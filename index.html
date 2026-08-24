@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radar Validation Fixture</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="campaign.css" />
+  <script src="./vendor/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="app">
+
+  <!-- -- Header ---------------------------------------------------------------- -->
+  <header>
+    <div class="header-logo">
+      <div class="logo-text">Radar Validation Fixture</div>
+    </div>
+    <div class="header-status">
+      <div class="estop-badge" id="estop-badge">E-STOP ACTIVE</div>
+      <div class="status-chip">
+        <div id="dot-pi" class="status-dot"></div>
+        <span id="lbl-pi">Raspberry Pi</span>
+      </div>
+      <div class="status-chip">
+        <div id="dot-driver" class="status-dot"></div>
+        <span id="lbl-driver">Driver</span>
+      </div>
+
+      <div class="status-chip">
+        <div id="dot-radar" class="status-dot"></div>
+        <span id="lbl-radar">Radar LOW</span>
+      </div>
+
+      <button class="btn-icon-header" id="config-btn" title="Configuration" aria-label="Configuration">&#9881;</button>
+      <span class="app-version" id="app-version">v0.1.0</span>
+    </div>
+  </header>
+
+  <!-- -- Main Row -------------------------------------------------------------- -->
+  <main>
+
+    <!-- Left: Setup -->
+    <aside class="panel">
+      <div class="panel-title">Setup</div>
+
+      <!-- Connection -->
+      <div class="card">
+        <div class="card-label">Fixture Connection (Moonraker)</div>
+        <div class="form-row">
+          <label>Host</label>
+          <input type="text" id="conn-host" placeholder="192.168.6.3" style="width:120px" />
+        </div>
+        <div class="form-row">
+          <label>Port</label>
+          <input type="text" id="conn-port" placeholder="7125" style="width:70px" />
+        </div>
+        <div class="port-row">
+          <button class="btn-connect" id="conn-btn" style="flex:1">Connect</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim)" id="klippy-state">klippy: unknown</div>
+      </div>
+
+      <div class="card campaign-card">
+        <div class="card-label">Campaign <span class="workflow-tag" id="campaign-state-badge">READY</span></div>
+        <div class="campaign-name" id="campaign-card-name">No active campaign</div>
+        <div class="campaign-progress-track"><span id="campaign-progress-fill"></span></div>
+        <div class="campaign-progress-text" id="campaign-progress-text">Start a campaign to track local reports and CSV results.</div>
+        <div class="campaign-next" id="campaign-next-condition"></div>
+        <div class="campaign-local-status" id="campaign-local-status">Local results are protected.</div>
+        <label class="checkbox-row campaign-auto-run-control" id="campaign-auto-run-control" hidden>
+          <input type="checkbox" id="campaign-auto-run-toggle" />
+          Auto Run remaining campaign
+        </label>
+        <div class="campaign-auto-run-state" id="campaign-auto-run-state"></div>
+        <div class="button-row campaign-actions">
+          <button class="btn-primary" id="campaign-primary-btn" type="button">Start New Campaign</button>
+          <button class="btn-small" id="campaign-view-btn" type="button" hidden>View Campaign</button>
+        </div>
+      </div>
+
+      <div class="card quick-run-card">
+        <div class="card-label">Run a Test <span class="workflow-tag">Operator Flow</span></div>
+        <section class="operator-path" id="operator-path">
+          <div class="operator-step"><span>1</span><div><strong>What are you testing?</strong><select id="guided-layout"><option value="">Choose a layout…</option><option value="single">Single sensor</option><option value="dual">Dual sensor or system-level DUT</option></select></div></div>
+          <div class="operator-step" id="guided-sensor-step" hidden><span>2</span><div><strong>Which sensor are you using?</strong><select id="guided-sensor"><option value="">Choose a sensor…</option></select></div></div>
+          <div class="operator-step" id="guided-location-step" hidden><span>3</span><div><strong>Where is the sensor or DUT?</strong><select id="guided-dut-location"></select></div></div>
+          <div class="operator-step" id="guided-dut-step" hidden><span>4</span><div><strong>What is the DUT name?</strong><label>DUT or product ID <input type="text" id="guided-dut-id" placeholder="Unit or serial number" autocomplete="off" /></label></div></div>
+          <div class="operator-step" id="guided-type-step" hidden><span>5</span><div><strong>Test type</strong><select id="guided-test-type"><option value="">Choose a test type…</option></select></div></div>
+          <div class="operator-step" id="guided-plan-step" hidden><span>6</span><div><strong>Test plan</strong><select id="guided-test-plan"><option value="">Choose a compatible plan…</option></select><p id="guided-plan-help" class="card-note"></p><button class="btn-small" id="guided-manage-plans-btn" type="button">Create or Edit Test Plans</button></div></div>
+          <div class="operator-step" id="guided-review-step" hidden><span>7</span><div class="guided-details"><strong>Review and customize test plan</strong>
+            <div class="guided-grid">
+              <label>Test points <input type="number" id="guided-plan-points" min="1" max="2000" step="1" /></label>
+              <label>Point layout <select id="guided-plan-layout"><option value="even">Even distribution</option><option value="boundary">Boundary emphasis</option><option value="grid">Raster grid</option><option value="seeded">Repeatable seeded</option><option value="imported">Imported points</option><option value="manual">Manual points</option></select></label>
+              <label>Angular zone <select id="guided-plan-zone"></select></label>
+              <label>Cycles to run <input type="number" id="guided-plan-cycles" min="1" max="100" step="1" /></label>
+              <label>Pass threshold (%) <input type="number" id="guided-plan-pass" min="0" max="100" step="0.1" /></label>
+            </div>
+            <strong>Reflector movement bounds (mm)</strong>
+            <div class="guided-grid">
+              <label>X minimum <input type="number" id="guided-bound-min-x" step="0.1" /></label>
+              <label>X maximum <input type="number" id="guided-bound-max-x" step="0.1" /></label>
+              <label>Y minimum <input type="number" id="guided-bound-min-y" step="0.1" /></label>
+              <label>Y maximum <input type="number" id="guided-bound-max-y" step="0.1" /></label>
+            </div>
+            <p>Bounds limit every reflector position in this plan. Fixture travel and DUT keep-out checks still apply.</p>
+            <label id="guided-derived-name-row" hidden>New test plan name <input type="text" id="guided-derived-name" maxlength="160" placeholder="Name this modified test plan" autocomplete="off" /></label>
+            <div id="guided-review" class="guided-review"></div>
+            <div class="quick-preview-title">Live point-grid preview</div>
+            <canvas id="guided-plan-preview" aria-label="Live test plan point-grid preview"></canvas>
+          </div></div>
+          <div class="operator-step" id="guided-output-step" hidden><span>8</span><div class="guided-details"><strong>Review output naming</strong><div class="guided-review"><span id="guided-output-name"></span><br /><span id="guided-output-destination">Saved to the protected local results folder</span></div></div></div>
+          <div class="operator-step" id="guided-readiness-step" hidden><span>9</span><div class="guided-details"><strong>Save, inspect, then run</strong><div id="guided-readiness" class="guided-review" role="status" aria-live="polite"></div><div class="guided-run-actions"><button class="btn-secondary" id="guided-prepare-btn" type="button">Save &amp; Preview Grid</button><button class="btn-primary" id="guided-run-btn" type="button" disabled>Run Test</button></div><div id="guided-status" role="status" aria-live="polite"></div></div></div>
+        </section>
+        <details class="advanced-operator-controls" hidden><summary>Legacy runtime controls</summary>
+        <div class="workflow-step"><span>1</span><strong>Choose a reusable test plan</strong></div>
+        <div class="form-row"><label>Test plan</label><select id="quick-recipe-select" style="flex:1"></select></div>
+        <div class="card-note" id="quick-recipe-description">Choose a test plan to load its repeatable procedure and acceptance rules.</div>
+        <button class="btn-small btn-test-builder" id="quick-customize-recipe-btn" type="button">Customize Test Plan</button>
+        <div class="form-row" id="quick-test-mode-row" hidden><label>Legacy test type</label>
+          <select id="quick-test-mode">
+            <option value="characterization">Characterization</option>
+            <option value="interference">Radar Pair Interference Characterization</option>
+            <option value="inside">Test 10.1 - Positive</option>
+            <option value="outside">Test 10.2 - Negative</option>
+            <option value="system">System Level Bounds</option>
+            <option value="custom">Custom pass/fail</option>
+            <option value="sequence">Unscored sequence</option>
+          </select>
+        </div>
+        <div class="form-row"><label>DUT ID <small>(optional)</small></label><input type="text" id="quick-dut-id" /></div>
+        <div class="form-row"><label>Repeat this run</label><input type="number" min="1" max="100" step="1" id="quick-repeat-count" /><span class="input-suffix">time(s)</span></div>
+
+        <div id="quick-formal-controls">
+          <div class="workflow-step"><span>2</span><strong>Set test size</strong></div>
+          <div class="form-row"><label>Test points</label><input type="number" min="1" step="1" id="quick-point-count" /></div>
+          <label class="checkbox-row"><input type="checkbox" id="quick-angular-zone-enabled" /> Limit points to one angular zone</label>
+          <div class="form-row" id="quick-angular-zone-row"><label>Angular zone</label>
+            <select id="quick-angular-zone">
+              <option value="front">Front (-45&deg; to 45&deg;)</option>
+              <option value="right">Right (45&deg; to 90&deg;)</option>
+              <option value="left">Left (-90&deg; to -45&deg;)</option>
+            </select>
+          </div>
+          <div class="card-note">Zone angle is measured from straight ahead (decreasing Y); positive angles are fixture-right.</div>
+          <div class="form-row"><label>Cycles to run</label><input type="number" min="1" step="1" id="quick-cycle-count" /></div>
+          <div class="quick-preview-title">Automatically generated plan</div>
+          <canvas id="quick-formal-preview" aria-label="Read-only formal test plan preview"></canvas>
+        </div>
+
+        <div id="quick-characterization-controls">
+          <div class="quick-preview-title">Characterization footprint (mm)</div>
+          <div class="footprint-grid">
+            <label>X min<input type="number" id="quick-char-x-min" /></label>
+            <label>X max<input type="number" id="quick-char-x-max" /></label>
+            <label>Y min<input type="number" id="quick-char-y-min" /></label>
+            <label>Y max<input type="number" id="quick-char-y-max" /></label>
+          </div>
+        </div>
+
+        <div id="quick-plan-source">
+          <div class="workflow-step"><span>2</span><strong>Choose a test plan</strong></div>
+          <div class="form-row"><select id="quick-sequence-select" aria-label="Active test plan"></select></div>
+          <button class="btn-load-plan" id="quick-load-csv-btn">Load Test CSV</button>
+          <input type="file" id="quick-load-csv-file" accept=".csv,text/csv" hidden />
+          <div class="card-note">Required columns: X and Y. Hold, zone, and expectedDetected are optional.</div>
+          <div class="form-row"><label>Cycles to run</label><input type="number" min="1" step="1" id="quick-general-cycle-count" /></div>
+        </div>
+
+        <div class="form-row" id="quick-pass-threshold-row"><label>Pass threshold</label><input type="number" min="0" max="100" step="0.1" id="quick-pass-threshold" /><span class="input-suffix">%</span></div>
+        </details>
+
+        <div class="quick-plan-summary" id="quick-plan-summary">No test plan selected</div>
+        <div class="preflight-checklist" id="quick-preflight-checklist" aria-live="polite"></div>
+        <div class="workflow-step"><span>3</span><strong>Connect, then press Run</strong></div>
+        <button class="btn-small btn-test-builder" id="quick-open-builder-btn">Open Test Builder / Edit Points</button>
+      </div>
+
+      <!-- Homing -->
+      <div class="card">
+        <div class="card-label">Homing</div>
+        <div class="port-row">
+          <button class="btn-home" id="home-all-btn" disabled>Home All</button>
+        </div>
+        <div class="port-row">
+          <button class="btn-home" id="home-x-btn" disabled>Home X</button>
+          <button class="btn-home" id="home-y-btn" disabled>Home Y</button>
+        </div>
+        <div class="port-row">
+          <button class="btn-home" id="zero-z-btn" disabled style="border-color:var(--purple);color:var(--purple)">Zero Z</button>
+        </div>
+        <div class="card-note">Z has no home switch per fixture config. "Zero Z" sets the current position as Z0 (SET_KINEMATIC_POSITION). Confirm this is the intended behavior with the mechanical/firmware owner.</div>
+      </div>
+
+      <!-- Reflector Spin -->
+      <div class="card">
+        <div class="card-label">Reflector Spin</div>
+        <div class="form-row">
+          <label>Spin speed</label>
+          <input type="number" id="spin-speed-input" style="width:120px" />
+        </div>
+        <div class="card-note">Applies to every test type that uses the reflector trigger macro. This value is passed to Klipper as `SPEED=...`.</div>
+      </div>
+
+      <!-- Jog -->
+      <div class="card">
+        <div class="card-label">Manual Jog</div>
+        <div class="jog-controls">
+          <div class="jog-axis-row">
+            <span class="jog-axis-label x">X</span>
+            <button class="jog-btn" data-axis="x" data-dir="-1" disabled>&lt;&lt;</button>
+            <button class="jog-btn" data-axis="x" data-dir="-0.1" disabled>&lt;</button>
+            <span class="jog-pos" id="jog-x-val">--.-</span>
+            <button class="jog-btn" data-axis="x" data-dir="0.1" disabled>&gt;</button>
+            <button class="jog-btn" data-axis="x" data-dir="1" disabled>&gt;&gt;</button>
+          </div>
+          <div class="jog-axis-row">
+            <span class="jog-axis-label y">Y</span>
+            <button class="jog-btn" data-axis="y" data-dir="-1" disabled>&lt;&lt;</button>
+            <button class="jog-btn" data-axis="y" data-dir="-0.1" disabled>&lt;</button>
+            <span class="jog-pos" id="jog-y-val">--.-</span>
+            <button class="jog-btn" data-axis="y" data-dir="0.1" disabled>&gt;</button>
+            <button class="jog-btn" data-axis="y" data-dir="1" disabled>&gt;&gt;</button>
+          </div>
+          <div class="jog-axis-row">
+            <span class="jog-axis-label z">Z</span>
+            <button class="jog-btn" data-axis="z" data-dir="-1" disabled>&lt;&lt;</button>
+            <button class="jog-btn" data-axis="z" data-dir="-0.1" disabled>&lt;</button>
+            <span class="jog-pos" id="jog-z-val">--.-</span>
+            <button class="jog-btn" data-axis="z" data-dir="0.1" disabled>&gt;</button>
+            <button class="jog-btn" data-axis="z" data-dir="1" disabled>&gt;&gt;</button>
+          </div>
+        </div>
+        <div class="jog-step-row">
+          <span>Step</span>
+          <select id="jog-step-sel">
+            <option value="0.1">0.1 mm (fine)</option>
+            <option value="1" selected>1 mm (normal)</option>
+            <option value="10">10 mm</option>
+            <option value="50">50 mm</option>
+          </select>
+        </div>
+        <div class="card-note">Inner buttons jog the step size shown above; outer buttons jog 10 times that step.</div>
+      </div>
+
+      <!-- Two-radar gain and sensing-threshold controls. Changes are staged until Apply. -->
+      <div class="card radar-settings-card">
+        <div class="card-label">Radar Range Settings <span id="radar-settings-badge" class="settings-badge offline">Offline</span></div>
+        <div class="radar-sensor-status">
+          <span id="radar-a-settings-status"><i id="radar-a-settings-dot" class="status-dot"></i>Radar A</span>
+          <span id="radar-b-settings-status"><i id="radar-b-settings-dot" class="status-dot"></i>Radar B</span>
+          <span id="radar-single-settings-status" hidden><i id="radar-single-settings-dot" class="status-dot"></i>Single radar</span>
+          <span id="radar-ld021-settings-status" hidden><i id="radar-ld021-settings-dot" class="status-dot"></i>HLK-LD021</span>
+          <span id="radar-ld021-a-settings-status" hidden><i id="radar-ld021-a-settings-dot" class="status-dot"></i>LD021_A</span>
+          <span id="radar-ld021-b-settings-status" hidden><i id="radar-ld021-b-settings-dot" class="status-dot"></i>LD021_B</span>
+          <span id="radar-rcwl-single-settings-status" hidden><i id="radar-rcwl-single-settings-dot" class="status-dot"></i>RCWL-0516</span>
+          <span id="radar-rcwl-a-settings-status" hidden><i id="radar-rcwl-a-settings-dot" class="status-dot"></i>RCWL A</span>
+          <span id="radar-rcwl-b-settings-status" hidden><i id="radar-rcwl-b-settings-dot" class="status-dot"></i>RCWL B</span>
+        </div>
+        <div class="form-row" id="radar-gain-row"><label for="radar-gain-select">Gain</label>
+          <select id="radar-gain-select" disabled>
+            <option value="3">0x03</option><option value="19">0x13</option>
+            <option value="35">0x23</option><option value="51">0x33</option>
+            <option value="67">0x43</option><option value="83">0x53</option>
+            <option value="99">0x63</option><option value="115">0x73</option>
+            <option value="131">0x83</option><option value="147">0x93</option>
+          </select>
+        </div>
+        <div class="form-row" id="radar-threshold-row"><label id="radar-threshold-label" for="radar-threshold-input">Threshold</label><input type="number" id="radar-threshold-input" min="16" max="1022" step="1" disabled /></div>
+        <section id="radar-ld021-experimental" class="radar-experimental" hidden aria-labelledby="radar-ld021-experimental-title">
+          <div id="radar-ld021-experimental-title" class="radar-experimental-title">Experimental - HLK-LD021 only</div>
+          <div class="form-row"><label for="radar-output-time-input">HIGH time (ms)</label><input type="number" id="radar-output-time-input" min="0" max="6553500" step="100" inputmode="numeric" disabled /></div>
+          <div class="card-note">Persistent on Apply. Uses the module's output-delay field in exact 100 ms steps and is verified by device readback.</div>
+        </section>
+        <div id="radar-settings-direction" class="radar-direction">Lower values increase expected range.</div>
+        <div class="radar-settings-actions">
+          <button class="btn-small" id="radar-settings-refresh" disabled>Re-read</button>
+          <button class="btn-small" id="radar-settings-apply" disabled>Apply Temporary</button>
+          <button class="btn-small" id="radar-settings-save" disabled>Save to Both</button>
+        </div>
+        <div class="card-note" id="radar-settings-message">Connect to the fixture to read the active radar target. Tests require verified settings.</div>
+      </div>
+
+      <!-- Emergency Stop -->
+      <div class="card">
+        <button class="btn-estop" id="estop-btn" disabled>EMERGENCY STOP</button>
+        <button class="btn-clear-estop" id="clear-estop-btn" disabled>Firmware Restart (clear E-Stop)</button>
+      </div>
+    </aside>
+
+    <!-- Center: Test Control -->
+    <section class="test-control">
+
+      <!-- Position Readout -->
+      <div class="position-readout">
+        <div class="pos-tile x">
+          <div class="homed-dot" id="homed-x"></div>
+          <span class="axis-name">X</span>
+          <span class="axis-val" id="pos-x">---.-</span>
+        </div>
+        <div class="pos-tile y">
+          <div class="homed-dot" id="homed-y"></div>
+          <span class="axis-name">Y</span>
+          <span class="axis-val" id="pos-y">---.-</span>
+        </div>
+        <div class="pos-tile z">
+          <div class="homed-dot" id="homed-z"></div>
+          <span class="axis-name">Z</span>
+          <span class="axis-val" id="pos-z">---.-</span>
+        </div>
+      </div>
+
+      <!-- Travel Scene -->
+      <div class="travel-scene">
+        <div class="travel-map" id="travel-map">
+          <div class="travel-origin"></div>
+          <div class="travel-target" id="travel-target"></div>
+          <div class="travel-dot" id="travel-dot"></div>
+        </div>
+        <div class="z-gauge">
+          <div class="z-gauge-label">Z</div>
+          <div class="z-gauge-fill" id="z-gauge-fill"></div>
+        </div>
+        <button id="start-btn" disabled hidden>
+          <span class="btn-icon-large" id="start-icon">RUN</span>
+          <span class="btn-label" id="start-label">RUN TEST</span>
+        </button>
+      </div>
+
+      <!-- Feature-owned template is registered by run-state-view.js before renderer startup. -->
+      <run-state-flow></run-state-flow>
+
+      <div class="seq-progress">Position <span class="n" id="seq-idx">0</span> / <span class="n" id="seq-total">0</span> - Test plan: <span class="n" id="seq-name">Default</span></div>
+
+    </section>
+
+    <!-- Right: Status / Results -->
+    <aside class="panel">
+      <div class="panel-title">Status</div>
+
+      <div class="status-grid">
+        <div class="status-row"><div class="status-dot" id="dot-s-pi"></div>Raspberry Pi Online</div>
+        <div class="status-row"><div class="status-dot" id="dot-s-driver"></div>Driver Connected</div>
+        <div class="status-row"><div class="status-dot" id="dot-s-xhome"></div>X Homed</div>
+        <div class="status-row"><div class="status-dot" id="dot-s-yhome"></div>Y Homed</div>
+        <div class="status-row"><div class="status-dot" id="dot-s-zhome"></div>Z Homed</div>
+        <div class="status-row"><div class="status-dot" id="dot-s-motion"></div>Motion Active</div>
+        <div class="status-row"><div class="status-dot" id="dot-s-testrunning"></div>Test Running</div>
+        <div class="status-row"><div class="status-dot" id="dot-s-fault"></div>Fault Present</div>
+        <div class="status-row"><div class="status-dot" id="dot-s-estop"></div>Emergency Stop Active</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="result-badge idle" id="result-badge">
+        <span class="result-icon" id="result-icon">-</span>
+        <span class="result-text idle" id="result-text">READY</span>
+      </div>
+      <div class="result-reason" id="result-reason">Load or select a test plan, then connect to begin</div>
+
+      <div class="test-counter">
+        <div class="counter-item">
+          <span class="counter-num" id="cnt-positions" style="color:var(--text)">0</span>
+          <span class="counter-label">Positions</span>
+        </div>
+        <div class="counter-item">
+          <span class="counter-num pass" id="cnt-triggers">0</span>
+          <span class="counter-label">Triggers</span>
+        </div>
+        <div class="counter-item">
+          <span class="counter-num fail" id="cnt-faults">0</span>
+          <span class="counter-label">Faults</span>
+        </div>
+      </div>
+
+      <div class="outcome-grid" id="outcome-grid">
+        <div class="outcome-item tp"><span id="cnt-tp">0</span><small>True Positive</small></div>
+        <div class="outcome-item tn"><span id="cnt-tn">0</span><small>True Negative</small></div>
+        <div class="outcome-item fn"><span id="cnt-fn">0</span><small>False Negative</small></div>
+        <div class="outcome-item fp"><span id="cnt-fp">0</span><small>False Positive</small></div>
+        <div class="outcome-item invalid"><span id="cnt-invalid">0</span><small>Invalid</small></div>
+        <div class="outcome-item rate"><span id="cnt-rate">-</span><small>Correct</small></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="card">
+        <div class="card-label">Last Trigger Metrics</div>
+        <div class="metric-line"><span class="k">Position</span><span class="v" id="metric-pos">---</span></div>
+        <div class="metric-line"><span class="k">Move Duration</span><span class="v" id="metric-move-dur" style="color:var(--cyan)">---</span></div>
+        <div class="metric-line"><span class="k">Trigger Latency</span><span class="v" id="metric-latency" style="color:var(--green)">---</span></div>
+        <div class="divider"></div>
+        <div class="metric-line"><span class="k">Sequence Duration</span><span class="v" id="metric-seq-dur">---</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Active Log</div>
+        <div style="font-size:11px;color:var(--text-dim);word-break:break-all;line-height:1.5" id="log-path-display">No test run yet</div>
+        <button class="btn-small" id="export-csv-btn" style="margin-top:4px">Export CSV</button>
+        <button class="btn-small" id="open-report-btn" style="margin-top:4px">Open Report</button>
+        <button class="btn-small" id="show-log-files-btn" style="margin-top:4px">Show Files</button>
+      </div>
+    </aside>
+  </main>
+
+  <!-- -- Bottom Panel ----------------------------------------------------------- -->
+  <div class="bottom-panel">
+
+    <!-- Chart -->
+    <div class="chart-container">
+      <div class="chart-header">
+        <span class="chart-title" id="viz-title">Raw Spatial Results - Current Run</span>
+        <div class="viz-tabs">
+          <button class="btn-small active" id="viz-spatial-btn">Spatial Results</button>
+          <button class="btn-small" id="viz-latency-btn">Raw Latency</button>
+          <button class="btn-small" id="viz-motion-btn">Motion Timeline</button>
+          <button class="btn-small" id="viz-load-results-btn">Load Result CSV(s)</button>
+          <input type="file" id="viz-results-files" accept=".csv,text/csv" multiple hidden />
+          <select id="viz-run-filter" title="Show all observations or one run/cycle"><option value="all">All runs / cycles</option></select>
+        </div>
+        <div class="chart-legend" id="spatial-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#00e87b"></div><span>TP</span></div>
+          <div class="legend-item"><div class="legend-dot square" style="background:#55b7ff"></div><span>TN</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ff405c"></div><span>FN</span></div>
+          <div class="legend-item"><div class="legend-dot diamond" style="background:#ff9f43"></div><span>FP</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#69788f"></div><span>Invalid</span></div>
+        </div>
+      </div>
+      <div class="viz-stage">
+        <canvas id="spatial-results-canvas"></canvas>
+        <canvas id="position-chart" class="viz-hidden"></canvas>
+        <div id="spatial-tooltip" class="spatial-tooltip"></div>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-panel">
+      <div class="log-header">
+        <span class="log-title">Event Log</span>
+        <div class="log-actions">
+          <button class="btn-small" id="clear-log-btn">Clear</button>
+        </div>
+      </div>
+      <div id="log-output"></div>
+      <div class="log-path" id="log-path-footer">No log file open</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- -- Configuration Modal ------------------------------------------------------- -->
+<div class="modal-overlay" id="campaign-modal" role="dialog" aria-modal="true" aria-labelledby="campaign-modal-title">
+  <div class="modal-box campaign-modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="campaign-modal-title">Start New Campaign</span>
+      <button class="btn-icon-sm" id="campaign-modal-close-btn" type="button" aria-label="Close campaign dialog">X</button>
+    </div>
+    <div class="modal-body full">
+      <section id="campaign-create-view">
+        <div class="campaign-wizard-intro">Define the test once. The app will prepare every angular zone, gain, threshold, and repeated run while organizing reports and graphs automatically.</div>
+        <div class="campaign-create-grid">
+          <div class="campaign-step-card">
+            <div class="campaign-step-heading"><span>1</span><strong>Campaign</strong></div>
+            <label>Campaign name<input id="campaign-name-input" type="text" placeholder="10.1 Repeatability - Aqua Rev-D" /></label>
+            <label>DUT or product<input id="campaign-dut-input" type="text" placeholder="Aqua 3C-DC" /></label>
+            <label>Test type
+              <select id="campaign-test-type">
+                <option value="inside">Test 10.1 - Positive</option>
+                <option value="outside">Test 10.2 - Negative</option>
+                <option value="system">System Level Bounds - Green / Grey / Red</option>
+                <option value="characterization">Characterization</option>
+                <option value="interference">Radar Pair Interference Characterization</option>
+                <option value="custom">Custom test plan</option>
+              </select>
+            </label>
+            <label>Test plan<select id="campaign-recipe-select"></select></label>
+            <label class="checkbox-row campaign-auto-run-choice">
+              <input id="campaign-auto-run-input" type="checkbox" />
+              <span><strong>Auto Run full campaign</strong><small>Automatically applies and verifies each radar condition, then runs every remaining test. Stops on fixture, settings, E-Stop, or local-save errors.</small></span>
+            </label>
+          </div>
+          <div class="campaign-step-card">
+            <div class="campaign-step-heading"><span>2</span><strong>Run plan</strong></div>
+            <div class="campaign-number-grid">
+              <label>Runs per condition<input id="campaign-runs-input" type="number" min="1" max="100" value="3" /></label>
+              <label>Cycles per run<input id="campaign-cycles-input" type="number" min="1" max="100" value="3" /></label>
+              <label>Points per cycle<input id="campaign-points-input" type="number" min="1" max="10000" value="100" /></label>
+              <label id="campaign-pass-label">Pass threshold (%)<input id="campaign-pass-input" type="number" min="0" max="100" step="0.1" value="95" /></label>
+            </div>
+            <label id="campaign-radar-target-row">Radar hardware
+              <select id="campaign-radar-target"><option value="single">MS58 standalone</option><option value="rcwl_single">RCWL-0516 single</option><option value="ld021">HLK-LD021</option><option value="dual">MoreSense dual</option><option value="rcwl_dual">RCWL-0516 dual</option></select>
+            </label>
+            <label id="campaign-hilink-sensor-row" hidden>HiLink sensor connection
+              <select id="campaign-hilink-sensor"><option value="A">Sensor A</option><option value="B">Sensor B</option></select>
+            </label>
+            <fieldset class="campaign-choice-group" id="campaign-gain-group">
+              <legend>Gain values</legend>
+              <div id="campaign-gain-options" class="campaign-chip-options">
+                <label><input type="checkbox" value="0x03" /><span>0x03</span></label>
+                <label><input type="checkbox" value="0x13" /><span>0x13</span></label>
+                <label><input type="checkbox" value="0x23" /><span>0x23</span></label>
+                <label><input type="checkbox" value="0x33" /><span>0x33</span></label>
+                <label><input type="checkbox" value="0x43" checked /><span>0x43</span></label>
+                <label><input type="checkbox" value="0x53" /><span>0x53</span></label>
+                <label><input type="checkbox" value="0x63" /><span>0x63</span></label>
+                <label><input type="checkbox" value="0x73" /><span>0x73</span></label>
+                <label><input type="checkbox" value="0x83" /><span>0x83</span></label>
+                <label><input type="checkbox" value="0x93" /><span>0x93</span></label>
+              </div>
+            </fieldset>
+            <label id="campaign-threshold-group"><span id="campaign-threshold-label">Threshold values</span> <small id="campaign-threshold-help">Comma separated</small><input id="campaign-thresholds-input" type="text" value="50" placeholder="16, 25, 50" /></label>
+            <fieldset class="campaign-choice-group" id="campaign-angular-zone-group">
+              <legend>Angular zones <small>Runs in this order</small></legend>
+              <div id="campaign-angular-zone-options" class="campaign-chip-options">
+                <label><input type="checkbox" value="right" /><span>Right 45&deg; to 90&deg;</span></label>
+                <label><input type="checkbox" value="front" /><span>Front -45&deg; to 45&deg;</span></label>
+                <label><input type="checkbox" value="left" /><span>Left -90&deg; to -45&deg;</span></label>
+                <label><input type="checkbox" value="all" checked /><span>Full area</span></label>
+              </div>
+              <p>Each selected zone becomes a campaign condition. All gain, threshold, and repeat combinations finish in one zone before the next zone begins.</p>
+            </fieldset>
+          </div>
+          <div class="campaign-step-card campaign-coordinate-card">
+            <div class="campaign-step-heading"><span>3</span><strong>Coordinates</strong></div>
+            <label>Activation zone
+              <select id="campaign-sensor-layout">
+                <option value="single">Single sensor</option>
+                <option value="dual">Dual sensor system</option>
+                <option value="ld021_pair">HLK-LD021 interference pair</option>
+                <option value="rcwl_pair">RCWL-0516 interference pair</option>
+              </select>
+            </label>
+            <div id="campaign-formal-coordinates" class="campaign-coordinate-panel">
+              <p>Points are generated from the calibrated test geometry.</p>
+              <label>DUT location
+                <select id="campaign-dut-location"></select>
+              </label>
+              <div class="campaign-number-grid" id="campaign-single-sensor-fields">
+                <label>Sensor center X<input id="campaign-center-x" type="number" step="0.1" /></label>
+                <label>Sensor Y (fixed physical location)<input id="campaign-center-y" type="number" value="1200" data-fixed-coordinate="true" readonly /></label>
+                <label>Sensor depth (mm)<input id="campaign-radius" type="number" min="0.1" step="0.1" /></label>
+                <label id="campaign-guard-label">Guard band (mm)<input id="campaign-guard-band" type="number" min="0" step="0.1" /></label>
+              </div>
+              <p id="campaign-system-geometry-note" hidden>Qualification treats the radar module as part of the DUT. Required detection and no-detection zones are measured from the complete selected DUT footprint.</p>
+            </div>
+            <div id="campaign-characterization-coordinates" class="campaign-coordinate-panel" hidden>
+              <p>Enter the rectangular footprint covered by the generated grid.</p>
+              <div class="campaign-number-grid">
+                <label>X minimum<input id="campaign-x-min" type="number" /></label>
+                <label>X maximum<input id="campaign-x-max" type="number" /></label>
+                <label>Y minimum<input id="campaign-y-min" type="number" /></label>
+                <label>Y maximum<input id="campaign-y-max" type="number" /></label>
+              </div>
+            </div>
+            <div id="campaign-custom-coordinates" class="campaign-coordinate-panel" hidden>
+              <p>Use an existing custom test plan from the Test Builder.</p>
+              <label>Test plan<select id="campaign-custom-plan"></select></label>
+            </div>
+          </div>
+        </div>
+        <div class="campaign-method-summary" id="campaign-workload-summary" aria-live="polite"></div>
+        <div class="campaign-run-names">
+          <div class="modal-section-title">Run names <small>Optional</small></div>
+          <p>Name only the runs that need a recognizable label. Unnamed runs keep their generated run number.</p>
+          <div id="campaign-run-name-grid"></div>
+        </div>
+        <div class="campaign-operation-status" id="campaign-create-status" role="status" aria-live="polite"></div>
+        <div class="modal-footer campaign-footer">
+          <button class="btn-small" id="campaign-create-cancel-btn">Cancel</button>
+          <button class="btn-primary" id="campaign-create-btn">Create Campaign</button>
+        </div>
+      </section>
+      <section id="campaign-dashboard-view" hidden>
+        <div class="campaign-dashboard-head">
+          <div><h2 id="campaign-dashboard-name">Campaign</h2><p id="campaign-dashboard-summary"></p></div>
+          <span class="status-chip" id="campaign-dashboard-sync">All results synchronized</span>
+        </div>
+        <div class="campaign-condition-grid" id="campaign-condition-grid"></div>
+        <label class="checkbox-row campaign-dashboard-auto">
+          <input type="checkbox" id="campaign-dashboard-auto-run-toggle" />
+          Auto Run remaining campaign
+        </label>
+        <div class="modal-footer campaign-footer">
+          <button class="btn-small" id="campaign-edit-btn" type="button">Edit Campaign</button>
+          <button class="btn-small danger-outline" id="campaign-archive-btn">Close &amp; Archive</button>
+          <button class="btn-primary" id="campaign-dashboard-prepare-btn">Prepare Next Run</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="config-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Engineering Settings</span>
+      <button class="btn-icon-sm" id="config-close-btn">X</button>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="motion">Motion</button>
+      <button class="tab-btn" id="config-sequence-tab" data-tab="sequence">Test Plans</button>
+      <button class="tab-btn" id="config-recipe-tab" data-tab="recipe" hidden>Legacy Recipe Builder</button>
+      <button class="tab-btn" id="config-system-level-tab" data-tab="system-level">System Level Bounds</button>
+      <button class="tab-btn" data-tab="logging">Logging &amp; SSH</button>
+      <button class="tab-btn" data-tab="errors">Error Codes</button>
+    </div>
+    <div class="modal-body full" id="modal-body">
+
+      <!-- Motion tab -->
+      <div class="tab-panel active" data-tab-panel="motion">
+        <div class="modal-section span2">
+          <div class="modal-section-title">Per-Axis Motion Parameters</div>
+          <div class="axis-config-head"><span></span><span>Min (mm)</span><span>Max (mm)</span><span>Speed (mm/s)</span><span>Accel (mm/s squared)</span></div>
+          <div class="axis-config-row"><span class="jog-axis-label x">X</span>
+            <input type="number" id="cfg-x-min" /><input type="number" id="cfg-x-max" />
+            <input type="number" id="cfg-x-speed" /><input type="number" id="cfg-x-accel" /></div>
+          <div class="axis-config-row"><span class="jog-axis-label y">Y</span>
+            <input type="number" id="cfg-y-min" /><input type="number" id="cfg-y-max" />
+            <input type="number" id="cfg-y-speed" /><input type="number" id="cfg-y-accel" /></div>
+          <div class="axis-config-row"><span class="jog-axis-label z">Z</span>
+            <input type="number" id="cfg-z-min" /><input type="number" id="cfg-z-max" />
+            <input type="number" id="cfg-z-speed" /><input type="number" id="cfg-z-accel" /></div>
+          <label class="checkbox-row"><input type="checkbox" id="cfg-motion-commissioned" /> I confirm X/Y travel limits, speed, acceleration, and reflector operation were measured and commissioned for this fixture.</label>
+          <div class="card-note">Min/Max are enforced again by the privileged motion process before G-code is sent. Speed is stored in mm/s and converted to G-code feed in mm/min only at the command boundary. Qualification runs remain locked until commissioning is confirmed; -9999 values are placeholders and cannot be commissioned.</div>
+        </div>
+        <div class="modal-section span2">
+          <div class="modal-section-title">Home Offset (applied via SET_GCODE_OFFSET)</div>
+          <div class="axis-config-head"><span></span><span>Offset (mm)</span><span></span><span></span><span></span></div>
+          <div class="axis-config-row"><span class="jog-axis-label x">X</span><input type="number" id="cfg-x-offset" /><span></span><span></span><span></span></div>
+          <div class="axis-config-row"><span class="jog-axis-label y">Y</span><input type="number" id="cfg-y-offset" /><span></span><span></span><span></span></div>
+          <div class="axis-config-row"><span class="jog-axis-label z">Z</span><input type="number" id="cfg-z-offset" /><span></span><span></span><span></span></div>
+        </div>
+        <div class="modal-section span2">
+          <div class="modal-section-title">Firmware Reference (read-only; edit printer.cfg on the Pi, then Firmware Restart)</div>
+          <div class="metric-line"><span class="k">Homing Speed X / Y</span><span class="v">4000 / 4000 mm/min (Z: N/A, no home switch)</span></div>
+          <div class="metric-line"><span class="k">Steps/mm</span><span class="v">Not recorded in source doc; pull from printer.cfg</span></div>
+          <div class="metric-line"><span class="k">X Driver Port / Current</span><span class="v">XM - 0.7 A</span></div>
+          <div class="metric-line"><span class="k">Y Driver Ports / Current</span><span class="v">ZAM + ZBM (dual motor) - 1.2 A</span></div>
+          <div class="metric-line"><span class="k">Z Driver Port / Current</span><span class="v">YM - 0.8 A</span></div>
+        </div>
+      </div>
+
+      <!-- Test Plans tab -->
+      <div class="tab-panel" data-tab-panel="sequence">
+        <div class="modal-section span2" id="builder-plan-settings">
+          <div class="modal-section-title">Create or Edit a Test Plan</div>
+          <div class="guided-review" id="engineering-plan-editor-state"><strong id="engineering-plan-mode">Editing Test Plan</strong><br /><span id="engineering-plan-meta"></span></div>
+          <div class="form-row">
+            <select id="engineering-plan-select" style="flex:1"></select>
+            <button class="btn-small" id="engineering-plan-new-btn" type="button">Create New Plan</button>
+            <button class="btn-small" id="engineering-plan-duplicate-btn" type="button">Duplicate and Edit</button>
+            <button class="btn-small" id="engineering-plan-rename-btn" type="button">Rename</button>
+            <button class="btn-small" id="engineering-plan-delete-btn" type="button">Delete</button>
+          </div>
+          <div class="card-note" id="engineering-plan-status">These are the same reusable test plans shown in the Run a Test operator flow.</div>
+          <div class="form-row"><label>Test plan name</label><input id="engineering-plan-name" type="text" placeholder="Test plan name" style="flex:1"></div>
+          <div class="form-row"><label>Description</label><textarea id="engineering-plan-description" rows="2" style="flex:1" placeholder="What this reusable procedure physically tests"></textarea></div>
+          <div class="form-row">
+            <label>Test type</label>
+            <select id="cfg-test-mode" style="width:160px">
+              <option value="characterization">Characterization</option>
+              <option value="interference">Radar Pair Interference</option>
+              <option value="inside">Test 10.1 - Inside</option>
+              <option value="outside">Test 10.2 - Outside</option>
+              <option value="system">System Level Bounds</option>
+              <option value="custom">Custom Per-Point Validation</option>
+              <option value="sequence">Unscored Sequence</option>
+            </select>
+          </div>
+          <div class="form-row builder-main-owned"><label>DUT identifier</label><input type="text" id="cfg-dut-id" style="width:180px" /></div>
+          <div class="form-row"><label>Default cycles</label><input type="number" min="1" id="cfg-cycles-required" style="width:100px" /></div>
+          <div class="form-row"><label>Point layout</label><select id="cfg-plan-distribution"><option value="even">Even distribution</option><option value="boundary">Boundary emphasis</option><option value="grid">Raster grid</option><option value="seeded">Repeatable seeded</option><option value="imported">Imported points</option><option value="manual">Manual points</option></select></div>
+          <div class="form-row builder-main-owned"><label>Starting cycle number</label><input type="number" min="1" id="cfg-cycle-number" style="width:100px" /></div>
+          <div class="form-row"><label>Definition file/reference</label><input type="text" id="cfg-definition-file" style="width:260px" /></div>
+          <div class="form-row" id="engineering-plan-pass-row"><label>Default pass threshold (%)</label><input type="number" min="0" max="100" id="cfg-custom-minimum" style="width:100px" /></div>
+          <div class="modal-section-title">Reflector Movement Bounds (mm)</div>
+          <div class="axis-config-head"><span></span><span>Minimum</span><span>Maximum</span></div>
+          <div class="axis-config-row"><span class="jog-axis-label x">X</span><input type="number" id="cfg-plan-min-x" /><input type="number" id="cfg-plan-max-x" /></div>
+          <div class="axis-config-row"><span class="jog-axis-label y">Y</span><input type="number" id="cfg-plan-min-y" /><input type="number" id="cfg-plan-max-y" /></div>
+          <div class="card-note">These are plan-specific execution bounds. They must remain inside commissioned fixture travel and outside protected DUT geometry.</div>
+          <div class="card-note">These values are saved with the reusable Test Plan. DUT identity, the actual run location, radar gain/threshold conditions, and output naming are selected when running the plan.</div>
+        </div>
+        <div class="modal-section span2" id="builder-validation-geometry">
+          <div class="modal-section-title" id="builder-validation-title">Detection Geometry &amp; Validation Plan</div>
+          <div class="form-row"><label>Preview DUT location</label><select id="cfg-dut-location" style="width:280px"></select></div>
+          <div class="card-note" id="cfg-dut-location-summary"></div>
+          <div class="form-row"><label>Compatible layout</label><select id="cfg-sensor-layout"><option value="single">Single sensor</option><option value="dual">Dual sensor system</option><option value="ld021_pair">HLK-LD021 interference pair</option><option value="rcwl_pair">RCWL-0516 interference pair</option></select></div>
+          <div class="form-row" id="cfg-radar-target-row"><label>Compatible radar hardware</label><select id="cfg-radar-target"><option value="single">MS58 standalone</option><option value="rcwl_single">RCWL-0516 single</option><option value="ld021">HLK-LD021</option><option value="dual">MoreSense dual</option><option value="rcwl_dual">RCWL-0516 dual</option></select></div>
+          <div class="form-row" id="cfg-hilink-sensor-row" hidden><label>HiLink sensor connection</label><select id="cfg-hilink-sensor"><option value="A">Sensor A</option><option value="B">Sensor B</option></select></div>
+          <div id="cfg-single-sensor-fields">
+            <div class="form-row"><label>Sensor center X (mm)</label><input type="number" id="cfg-radar-center-x" style="width:110px" /></div>
+            <div class="form-row"><label>Sensor center Y (mm)</label><input type="number" id="cfg-radar-center-y" value="1200" style="width:110px" /></div>
+            <div class="form-row"><label>Sensor forward depth (mm)</label><input type="number" id="cfg-radius-mm" style="width:110px" /></div>
+          </div>
+          <div id="cfg-ld021-pair-fields" hidden>
+            <div class="card-note">Characterization only - no acceptance criteria applied. Positions are unrestricted; fixture travel and reflector-route protections remain active.</div>
+            <div class="form-row"><label id="cfg-pair-a-label">Sensor A X / Y / heading (mm, mm, deg)</label><input type="number" id="cfg-ld021-a-x" style="width:82px" /><input type="number" id="cfg-ld021-a-y" style="width:82px" /><input type="number" id="cfg-ld021-a-heading" style="width:82px" /></div>
+            <div class="form-row"><label id="cfg-pair-b-label">Sensor B X / Y / heading (mm, mm, deg)</label><input type="number" id="cfg-ld021-b-x" style="width:82px" /><input type="number" id="cfg-ld021-b-y" style="width:82px" /><input type="number" id="cfg-ld021-b-heading" style="width:82px" /></div>
+            <div class="form-row"><label>Idle / startup / correlation (ms)</label><input type="number" id="cfg-ld021-idle-ms" style="width:82px" /><input type="number" id="cfg-ld021-startup-ms" style="width:82px" /><input type="number" id="cfg-ld021-correlation-ms" style="width:82px" /></div>
+            <div class="card-note">Heading: 0&deg; down on the map, negative left, positive right, plus or minus 180&deg; up. Beam overlap is informational only.</div>
+          </div>
+          <div class="card-note" id="cfg-system-geometry-note" hidden>System qualification treats both radar channels as one DUT module: detect through 304.8 mm from the nearest DUT edge, unscored through 609.6 mm, and no detection beyond 609.6 mm.</div>
+          <label class="checkbox-row" id="cfg-sensor-center-confirmation"><input type="checkbox" id="cfg-radar-center-confirmed" /> Sensor position measured and confirmed</label>
+          <div class="form-row" id="cfg-guard-band-row"><label>Single-sensor Test 10.2 guard band + (mm)</label><input type="number" id="cfg-guard-band-mm" style="width:110px" /></div>
+          <div class="form-row"><label>Default point count</label><input type="number" min="1" id="cfg-validation-point-count" style="width:110px" /></div>
+          <label class="checkbox-row"><input type="checkbox" id="cfg-angular-zone-enabled" /> Limit generated points to one angular zone</label>
+          <div class="form-row" id="cfg-angular-zone-row"><label>Angular zone</label>
+            <select id="cfg-angular-zone" style="width:180px">
+              <option value="front">Front (-45&deg; to 45&deg;)</option>
+              <option value="right">Right (45&deg; to 90&deg;)</option>
+              <option value="left">Left (-90&deg; to -45&deg;)</option>
+            </select>
+          </div>
+          <div class="card-note">0&deg; is straight ahead toward decreasing Y. Positive angles are fixture-right and negative angles are fixture-left. The filter applies only to automatically generated plans.</div>
+          <div class="form-row"><label>Negative-test outer distance (mm)</label><input type="number" id="cfg-outside-radius-mm" style="width:110px" /></div>
+          <div class="generator-actions builder-formal-operator-control">
+            <button class="btn-small" id="generate-inside-plan-btn">Generate Test 10.1</button>
+            <button class="btn-small" id="generate-outside-plan-btn">Generate Test 10.2</button>
+          </div>
+          <div class="card-note" id="builder-validation-note">Both plans face toward decreasing Y and follow the manual's tapered detection lobe. Test 10.1 fills the complete 12-inch area through its boundary. The guard band applies only to Test 10.2, which fills the surrounding negative-test band through the configured outer depth.</div>
+          <div class="card-note" id="config-active-run-note" hidden>Changes apply to the next characterization run. Apply is unavailable until the active run finishes so its plan cannot be replaced.</div>
+        </div>
+        <div class="modal-section span2" id="builder-general-generator">
+          <div class="modal-section-title">Plan Generator</div>
+          <div class="generator-toolbar">
+            <div class="form-row">
+              <label>Pattern</label>
+              <select id="seq-generator-pattern" style="width:100%">
+                <option value="line">Line Sweep</option>
+                <option value="raster">Raster Grid</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Hold</label>
+              <input type="number" id="seq-generator-hold" style="width:100%" />
+            </div>
+          </div>
+
+          <div class="generator-panel active" data-generator-panel="line">
+            <div class="form-row"><label>Start X</label><input type="number" id="seq-gen-line-start-x" style="width:100px" /></div>
+            <div class="form-row"><label>Start Y</label><input type="number" id="seq-gen-line-start-y" style="width:100px" /></div>
+            <div class="form-row"><label>End X</label><input type="number" id="seq-gen-line-end-x" style="width:100px" /></div>
+            <div class="form-row"><label>End Y</label><input type="number" id="seq-gen-line-end-y" style="width:100px" /></div>
+            <div class="form-row"><label>Points</label><input type="number" id="seq-gen-line-count" style="width:100px" /></div>
+          </div>
+
+          <div class="generator-panel" data-generator-panel="raster">
+            <div class="form-row">
+              <label>Raster Mode</label>
+              <select id="seq-gen-raster-mode" style="width:100%">
+                <option value="count">Target Count</option>
+                <option value="spacing">Spacing</option>
+              </select>
+            </div>
+            <div class="form-row"><label>Start X</label><input type="number" id="seq-gen-raster-x-min" style="width:100px" /></div>
+            <div class="form-row"><label>End X</label><input type="number" id="seq-gen-raster-x-max" style="width:100px" /></div>
+            <div class="form-row"><label>Start Y</label><input type="number" id="seq-gen-raster-y-min" style="width:100px" /></div>
+            <div class="form-row"><label>End Y</label><input type="number" id="seq-gen-raster-y-max" style="width:100px" /></div>
+            <div class="form-row raster-count-field"><label>Point Count</label><input type="number" id="seq-gen-raster-count" style="width:100px" /></div>
+            <div class="form-row raster-spacing-field"><label>X Step</label><input type="number" id="seq-gen-raster-x-step" style="width:100px" /></div>
+            <div class="form-row raster-spacing-field"><label>Y Step</label><input type="number" id="seq-gen-raster-y-step" style="width:100px" /></div>
+            <div class="form-row"><label>X Order</label>
+              <select id="seq-gen-raster-x-order" style="width:100px">
+                <option value="asc">Low to High</option>
+                <option value="desc">High to Low</option>
+              </select>
+            </div>
+            <div class="form-row"><label>Y Order</label>
+              <select id="seq-gen-raster-y-order" style="width:100px">
+                <option value="asc">Low to High</option>
+                <option value="desc">High to Low</option>
+              </select>
+            </div>
+            <label class="checkbox-row"><input type="checkbox" id="seq-gen-raster-serpentine" checked /> Serpentine rows</label>
+          </div>
+
+          <div class="generator-actions">
+            <button class="btn-small" id="seq-generator-preview-btn">Preview</button>
+            <button class="btn-small" id="seq-generator-apply-btn">Replace Active</button>
+            <button class="btn-small" id="seq-generator-append-btn">Append To Active</button>
+            <input id="seq-generator-name" type="text" placeholder="New sequence name" />
+            <button class="btn-small" id="seq-generator-create-btn">Create Sequence</button>
+          </div>
+          <div class="generator-preview">
+            <div class="generator-preview-title">XY Plan Preview</div>
+            <canvas id="seq-plan-preview"></canvas>
+          </div>
+          <div class="generator-summary" id="seq-generator-summary">No generated plan yet</div>
+          <div class="card-note">The table below still supports exact hand-entered points for short jobs or precision tuning. The generator writes the same sequence model the runner already uses.</div>
+        </div>
+        <div class="modal-section span2" id="builder-csv-import">
+          <div class="modal-section-title">Advanced CSV Import / Merge</div>
+          <div class="generator-actions">
+            <button class="btn-small" id="seq-import-load-btn">Load CSV</button>
+            <button class="btn-small" id="seq-import-preview-btn">Preview</button>
+            <button class="btn-small" id="seq-import-apply-btn">Replace Active</button>
+            <button class="btn-small" id="seq-import-append-btn">Append To Active</button>
+            <input id="seq-import-name" type="text" placeholder="New sequence name" />
+            <button class="btn-small" id="seq-import-create-btn">Create Sequence</button>
+          </div>
+          <textarea id="seq-import-csv" class="seq-import-box" placeholder="Paste CSV here with columns like x,y,z,holdMs"></textarea>
+          <div class="generator-summary" id="seq-import-summary">No CSV loaded yet</div>
+          <div class="card-note">Accepted columns: `x`, `y`, `z`, `holdMs`, and optional `zone` / `expectedDetected`; or a headerless X/Y/Z/hold CSV. Formal tests calculate expectations from their definition.</div>
+          <input type="file" id="seq-import-file" accept=".csv,text/csv" hidden />
+        </div>
+        <div class="modal-section span2" id="builder-positions">
+          <div class="modal-section-title">Positions (executed top to bottom)</div>
+          <div class="form-row">
+            <label>Linked motion sequence</label><select id="seq-select" style="flex:1"></select>
+            <button class="btn-small" id="seq-new-btn" type="button">New Sequence</button>
+            <button class="btn-small" id="seq-rename-btn" type="button">Rename</button>
+            <button class="btn-small" id="seq-delete-btn" type="button">Delete</button>
+            <input id="seq-name-input" type="text" placeholder="Sequence name">
+          </div>
+          <table class="seq-table" id="seq-table">
+            <thead><tr><th>#</th><th>X (mm)</th><th>Y (mm)</th><th>Hold (ms)</th><th>Zone</th><th>Expected</th><th></th></tr></thead>
+            <tbody id="seq-tbody"></tbody>
+          </table>
+          <button class="btn-small" id="seq-add-row-btn" style="align-self:flex-start">+ Add Position</button>
+          <div class="card-note">For Custom pass/fail tests, set each point to Detect or No detect. Auto is appropriate for formal geometry-based tests. Scan moves use X/Y only; reflector rotation is handled by the Klipper macro.</div>
+        </div>
+        <div class="modal-section span2" id="builder-trigger-timing">
+          <div class="modal-section-title">Trigger &amp; Timing</div>
+          <div class="form-row"><label>Trigger macro (G-code sent to Klipper)</label><input type="text" id="cfg-trigger-macro" style="width:160px" /></div>
+          <div class="form-row"><label>Wait after move before spin (ms)</label><input type="number" id="cfg-trigger-delay" style="width:100px" /></div>
+          <div class="form-row"><label>Default wait after spin finishes (ms)</label><input type="number" id="cfg-hold-default" style="width:100px" /></div>
+          <div class="form-row"><label>Position move timeout (ms)</label><input type="number" id="cfg-pos-timeout" style="width:100px" /></div>
+          <div class="form-row"><label>Radar timeout (ms)</label><input type="number" id="cfg-radar-timeout" style="width:100px" /></div>
+          <div class="form-row"><label>Radar poll interval (ms)</label><input type="number" id="cfg-radar-poll" style="width:100px" /></div>
+          <div class="form-row"><label>Pre-trigger LOW window (ms)</label><input type="number" id="cfg-radar-baseline-timeout" style="width:100px" disabled /></div>
+          <div class="card-note">The LOW check runs during the wait after each move. A point is marked INVALID if the radar does not establish a LOW baseline during that window. Poll interval controls latency resolution; 100 ms is recommended.</div>
+          <div class="card-note">REFLECTOR_SPIN must exist as a Klipper macro in printer.cfg. The spin speed is configured in the Setup panel and passed as `SPEED=...` for every test.</div>
+        </div>
+      </div>
+
+      <!-- Recipe Builder tab -->
+      <div class="tab-panel" data-tab-panel="recipe" hidden>
+        <div class="modal-section span2" id="recipe-builder">
+          <div class="modal-section-title">Create or Edit a Reusable Test Recipe</div>
+          <div class="card-note">A recipe is the shared definition used by a single run or a campaign. Saving creates a reusable version without changing historical reports.</div>
+          <div class="campaign-create-grid recipe-builder-grid">
+            <div class="campaign-step-card">
+              <div class="campaign-step-heading"><span>1</span><strong>Purpose</strong></div>
+              <label>Recipe name<input type="text" id="recipe-name-input" maxlength="100" /></label>
+              <label>Description<textarea id="recipe-description-input" rows="3"></textarea></label>
+              <label>Test family<select id="recipe-family-select">
+                <option value="inside">System Detection - Positive</option>
+                <option value="outside">System Rejection - Negative</option>
+                <option value="system">System Level Bounds - Combined</option>
+                <option value="characterization">Characterization</option>
+                <option value="interference">Radar Pair Interference</option>
+                <option value="custom">Custom Per-Point Validation</option>
+                <option value="sequence">Unscored Sequence</option>
+              </select></label>
+            </div>
+            <div class="campaign-step-card">
+              <div class="campaign-step-heading"><span>2</span><strong>Coverage</strong></div>
+              <label>Requested points<input type="number" min="1" max="10000" id="recipe-point-count-input" /></label>
+              <label>Point distribution<select id="recipe-distribution-select">
+                <option value="even">Even coverage</option><option value="boundary">Boundary emphasis</option>
+                <option value="grid">Grid</option><option value="seeded">Repeatable seeded</option>
+                <option value="imported">Imported points</option><option value="manual">Manual points</option>
+              </select></label>
+              <fieldset class="campaign-choice-group"><legend>System angular zones</legend><div class="campaign-chip-options" id="recipe-angular-zone-options">
+                <label><input type="checkbox" value="all" checked /><span>Full area</span></label>
+                <label><input type="checkbox" value="front" /><span>Front</span></label>
+                <label><input type="checkbox" value="left" /><span>Left</span></label>
+                <label><input type="checkbox" value="right" /><span>Right</span></label>
+              </div></fieldset>
+              <label>Coverage strategy<select id="recipe-coverage-mode">
+                <option value="angular">Angular zones</option><option value="front">Front - single sensor</option>
+                <option value="full-dut">Full DUT - front + both sides</option>
+              </select></label>
+              <div class="card-note">Front uses the forward area for a stand-mounted single sensor. Full DUT is for an in-field DUT and covers only its accessible front, left, and right sides.</div>
+            </div>
+            <div class="campaign-step-card">
+              <div class="campaign-step-heading"><span>3</span><strong>Execution and acceptance</strong></div>
+              <label>Cycles per run<input type="number" min="1" max="100" id="recipe-cycles-input" /></label>
+              <label id="recipe-pass-rate-row">Pass threshold (%)<input type="number" min="0" max="100" step="0.1" id="recipe-pass-rate-input" /></label>
+              <label>Green detection boundary (in)<input type="number" min="0.1" step="0.1" id="recipe-green-bound-input" /></label>
+              <label>Grey/red boundary (in)<input type="number" min="0.1" step="0.1" id="recipe-red-bound-input" /></label>
+            </div>
+          </div>
+          <div class="generator-actions">
+            <button class="btn-primary" id="recipe-save-btn" type="button">Save as New Recipe</button>
+            <button class="btn-small" id="recipe-copy-btn" type="button">Copy Active Recipe</button>
+          </div>
+          <div class="generator-summary" id="recipe-builder-status">Choose a built-in recipe to copy, or define a new recipe.</div>
+        </div>
+      </div>
+
+      <!-- System Level tab -->
+      <div class="tab-panel" data-tab-panel="system-level">
+        <div class="modal-section span2" id="system-level-barriers">
+          <div class="modal-section-title">System-Level DUT Edge Barriers</div>
+          <div class="form-row"><label>Green pass zone - detection required through (in)</label><input type="number" min="0.1" step="0.1" id="cfg-system-pass-inches" style="width:110px" /></div>
+          <div class="form-row"><label>Grey optional zone - outer edge (in)</label><input type="number" min="0.1" step="0.1" id="cfg-system-grey-inches" style="width:110px" /></div>
+          <div class="form-row"><label>Red fail zone - no detection beyond (in)</label><input type="number" min="0.1" step="0.1" id="cfg-system-red-inches" style="width:110px" /></div>
+          <div class="form-row"><label>Reflector keep-out clearance (mm)</label><input type="number" min="0" step="0.1" id="cfg-reflector-clearance-mm" style="width:110px" /></div>
+          <div class="form-row"><label>Coverage strategy</label><select id="cfg-coverage-mode" style="width:250px"><option value="angular">Angular zones</option><option value="front">Front - single sensor</option><option value="full-dut">Full DUT - front + both sides</option></select></div>
+          <div class="card-note">Distances are measured from the nearest physical DUT edge. The grey outer edge and red start describe the same barrier and stay synchronized. Defaults: green through 12 in, grey from 12 to 24 in, red beyond 24 in.</div>
+          <div class="card-note">Full DUT coverage means the accessible front, left, and right sides only. Rear coverage is never generated because it is outside the fixture's physical motion requirement.</div>
+          <div class="card-note" id="cfg-system-level-summary"></div>
+        </div>
+      </div>
+
+      <!-- Logging & SSH tab -->
+      <div class="tab-panel" data-tab-panel="logging">
+        <div class="modal-section">
+          <div class="modal-section-title">Logging</div>
+          <label class="checkbox-row"><input type="checkbox" id="cfg-logging-enabled" /> Write CSV log for each sequence run</label>
+          <div class="metric-line"><span class="k">Log folder</span><span class="v" id="cfg-log-folder" style="font-size:10px">---</span></div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-title">Radar Settings Service</div>
+          <div class="form-row"><label>HTTP port</label><input type="number" min="1" max="65535" id="cfg-radar-service-port" style="width:90px" /></div>
+          <div class="form-row"><label>Timeout (ms)</label><input type="number" min="250" id="cfg-radar-service-timeout" style="width:100px" /></div>
+          <label class="checkbox-row"><input type="checkbox" id="cfg-radar-require-verified" /> Require matching verified settings before tests</label>
+          <div class="card-note">The service runs on the same Pi host as Moonraker and independently verifies Radar A and Radar B.</div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-title">SSH Reference</div>
+          <div class="form-row"><label>Host</label><input type="text" id="cfg-ssh-host" style="width:120px" /></div>
+          <div class="form-row"><label>Username</label><input type="text" id="cfg-ssh-user" style="width:120px" /></div>
+          <div class="form-row"><label>Port</label><input type="number" id="cfg-ssh-port" style="width:80px" /></div>
+          <button class="btn-small" id="copy-ssh-btn">Copy SSH Command</button>
+          <div class="card-note">This app does not open SSH sessions itself; it talks to Moonraker over HTTP. This is here for quick reference when troubleshooting on the Pi directly.</div>
+        </div>
+      </div>
+
+      <!-- Error Codes tab -->
+      <div class="tab-panel" data-tab-panel="errors">
+        <div class="modal-section span2">
+          <div class="modal-section-title">Error Code Reference</div>
+          <table class="err-table">
+            <thead><tr><th>Code</th><th>Description</th><th>Suggested Corrective Action</th></tr></thead>
+            <tbody>
+              <tr><td class="code">ERR001</td><td>Motor Fault</td><td>Check TMC UART wiring and motor connector on the affected axis; power-cycle the SKR board.</td></tr>
+              <tr><td class="code">ERR002</td><td>Home Switch Failure</td><td>Verify XSTOP/YSTOP wiring and switch actuation; confirm homing direction in printer.cfg.</td></tr>
+              <tr><td class="code">ERR003</td><td>Driver Offline</td><td>Check the MicroUSB/UART link between the Pi and the SKR board; reseat the cable and restart Klipper.</td></tr>
+              <tr><td class="code">ERR004</td><td>Raspberry Pi Communication Lost</td><td>Check network/IP configuration and that the Pi is powered; confirm the Moonraker service is running.</td></tr>
+              <tr><td class="code">ERR005</td><td>Position Timeout</td><td>Check for mechanical binding; verify configured speed/accel don't exceed the motor's real capability.</td></tr>
+              <tr><td class="code">ERR006</td><td>Travel Limit Exceeded</td><td>Verify the commanded coordinate and configured axis limits. Reflector Z is reset automatically before each trigger.</td></tr>
+              <tr><td class="code">ERR007</td><td>Reflector Trigger Timeout</td><td>Check the REFLECTOR_SPIN macro, Z motor/driver, and Moonraker/Klipper logs. X/Y reached the requested test position before this error.</td></tr>
+              <tr><td class="code">ERR008</td><td>DUT Collision Zone</td><td>The requested endpoint or straight-line XY path touches or crosses the selected DUT footprint. Choose a safe point or move around the DUT.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-small" id="config-cancel-btn">Cancel</button>
+      <button class="btn-primary" id="config-apply-btn">Apply</button>
+    </div>
+  </div>
+</div>
+
+<script src="validation-core.js"></script>
+<script src="radar-settings-core.js"></script>
+<script src="text-input-core.js"></script>
+<script src="dut-location-core.js"></script>
+  <script src="test-plan-core.js"></script>
+  <script src="recipe-core.js"></script>
+  <script src="operator-flow-core.js"></script>
+  <script src="operator-flow-state.js"></script>
+  <script src="run-workspace-core.js"></script>
+<script src="renderer-store.js"></script>
+<script src="configuration-draft.js"></script>
+<script src="run-state-view.js"></script>
+<script src="renderer.js"></script>
+</body>
+</html>

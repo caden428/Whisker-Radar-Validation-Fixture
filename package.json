@@ -1,0 +1,93 @@
+{
+  "name": "radar-validation-fixture",
+  "version": "0.7.9",
+  "description": "Radar Validation Fixture Control System",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "test": "npm run test:unit && npm run test:renderer",
+    "test:unit": "node test/validation-core.test.js && node test/radar-settings-core.test.js && node test/motion-safety-core.test.js && node test/run-controller.test.js && node test/ipc-contracts.test.js && node test/test-plan-core.test.js && node test/test-plan-repository-core.test.js && node test/operator-flow-core.test.js && node test/operator-flow-state.test.js && node test/operator-flow-performance.test.js && node test/run-workspace-core.test.js && node test/renderer-architecture.test.js && node test/text-input-core.test.js && node test/dut-location-core.test.js && node test/recipe-core.test.js && node test/campaign-core.test.js && node test/campaign-ledger.test.js && node test/campaign-manager.test.js && node test/ui-bindings.test.js && node test/ui-critical-regression.test.js && node test/report-and-naming.test.js",
+    "test:renderer": "node test/renderer-startup.test.js",
+    "test:all": "npm run test",
+    "test:pi": "python3 -m unittest discover -s pi-radar-service -p 'test_*.py'",
+    "lint": "node tools/lint.js",
+    "format:check": "node tools/format-check.js",
+    "coverage": "node tools/run-coverage.js",
+    "release:simulated": "node tools/lint.js && node tools/format-check.js && npm run test:unit && node tools/run-coverage.js && node tools/release-gate.js record-simulated",
+    "release:physical": "node tools/release-gate.js physical"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.whisker.radar-validation-fixture",
+    "productName": "Radar Validation Fixture",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "validation-core.js",
+      "radar-settings-core.js",
+      "text-input-core.js",
+      "campaign-core.js",
+      "campaign-ledger.js",
+      "campaign-manager.js",
+      "run-naming-core.js",
+      "dut-location-core.js",
+      "motion-safety-core.js",
+      "run-controller.js",
+      "command-arbiter.js",
+      "fixture-adapters.js",
+      "renderer-store.js",
+      "configuration-draft.js",
+      "operator-flow-core.js",
+      "operator-flow-state.js",
+      "run-workspace-core.js",
+      "test-plan-core.js",
+      "test-plan-repository-core.js",
+      "run-state-view.js",
+      "smoke-test-harness.js",
+      "ipc-contracts.js",
+      "structured-logger.js",
+      "recipe-core.js",
+      "index.html",
+      "styles.css",
+      "campaign.css",
+      "vendor/**",
+      "pi-radar-service/**",
+      "Documentation/**",
+      "node_modules/**",
+      "!node_modules/.cache/**",
+      "!node_modules/electron/**",
+      "!node_modules/electron-builder/**"
+    ],
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Radar Validation Fixture"
+    }
+  },
+  "allowScripts": {
+    "electron@28.3.3": true
+  }
+}

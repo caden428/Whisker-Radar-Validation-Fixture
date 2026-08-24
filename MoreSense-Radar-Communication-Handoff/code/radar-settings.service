@@ -1,0 +1,20 @@
+[Unit]
+Description=Radar gain and sensing-threshold service
+After=network.target pigpiod.service
+Requires=pigpiod.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/radar-settings
+EnvironmentFile=-/etc/default/radar-settings
+ExecStart=/usr/bin/python3 /opt/radar-settings/radar_service.py
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
