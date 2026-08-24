@@ -122,9 +122,9 @@ const DEFAULT_CONFIG = {
   motion: {
     unitsVersion: MotionSafetyCore.MOTION_UNITS_VERSION,
     commissioned: false,
-    x: { minMm: -9999, maxMm: 1725, speedMmS: 5000 / 60, accelMmS2: 500, homeOffsetMm: 0 },
-    y: { minMm: -9999, maxMm: 1040, speedMmS: 5000 / 60, accelMmS2: 500, homeOffsetMm: 0 },
-    z: { minMm: -9999, maxMm: 9999, speedMmS: 5000 / 60, accelMmS2: 500, homeOffsetMm: 0 },
+    x: { minMm: 0, maxMm: 1725, speedMmS: 150, accelMmS2: 300, homeOffsetMm: 0 },
+    y: { minMm: 0, maxMm: 1040, speedMmS: 150, accelMmS2: 300, homeOffsetMm: 0 },
+    z: { minMm: -999999, maxMm: 999999, speedMmS: 333.3333333333333, accelMmS2: 300, homeOffsetMm: 0 },
   },
   trigger: {
     macro: 'REFLECTOR_SPIN',
